@@ -26,7 +26,7 @@ class HomeViewController: UIViewController {
         
         collectionView.register(ImageCollectionViewCell.self, forCellWithReuseIdentifier: "ImageCollectionViewCell")
         
-        collectionView.isPagingEnabled = true
+//        collectionView.isPagingEnabled = true
         collectionView.contentInsetAdjustmentBehavior = .never
         
         collectionView.showsVerticalScrollIndicator = false
@@ -85,6 +85,7 @@ extension HomeViewController: UICollectionViewDataSource {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCollectionViewCell", for: indexPath) as! ImageCollectionViewCell
         cell.loadImage(imageData: viewModel.imageResponseData[indexPath.row])
         cell.imageView.backgroundColor = viewModel.generateRandomColor()
+        cell.tag = indexPath.row
         
         // pagination
         if viewModel.imageResponseData.count.isMultiple(of: viewModel.pageSize) {
@@ -98,13 +99,13 @@ extension HomeViewController: UICollectionViewDataSource {
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-//        let estimatedWidth = UIScreen.main.bounds.width
-//        let imageWidth = viewModel.imageResponseData[indexPath.row].width ?? 0
-//        let imageHeight = viewModel.imageResponseData[indexPath.row].height ?? 0
-//        let estimatedH = estimatedWidth * (imageHeight/imageWidth)
-//        return CGSize(width: estimatedWidth, height: estimatedH)
+        let estimatedWidth = UIScreen.main.bounds.width
+        let imageWidth = viewModel.imageResponseData[indexPath.row].width ?? 0
+        let imageHeight = viewModel.imageResponseData[indexPath.row].height ?? 0
+        let estimatedH = estimatedWidth * (imageHeight/imageWidth)
+        return CGSize(width: estimatedWidth, height: estimatedH)
         
-        return CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        //return CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
     }
     
 }

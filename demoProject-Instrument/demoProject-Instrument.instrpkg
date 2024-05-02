@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<package>
+	<id>com.dheerajdev.demoProject-Instrument</id>
+	<title>demoProject-Instrument</title>
+	<owner>
+		<name>Appscrip 3Embed</name>
+	</owner>
+
+    <!-- Instruments Developer Help: https://help.apple.com/instruments/developer/mac/current/ -->
+
+    <os-signpost-interval-schema>
+        <id>image-download</id>
+        <title>Image Download</title>
+        
+        <subsystem>"com.dheerajdev.demoproject"</subsystem>
+        <category>"Networking"</category>
+        <name>"Background Image"</name>
+        
+        <start-pattern>
+            <message>"Image name:" ?image-name ",Caller:" ?caller-address</message>
+        </start-pattern>
+        <end-pattern>
+            <message>"Status:" ?status ",Size:" ?size</message>
+        </end-pattern>
+        
+        <column>
+            <mnemonic>status</mnemonic>
+            <title>Request status</title>
+            <type>string</type>
+            <expression>?status</expression>
+        </column>
+        
+        <column>
+            <mnemonic>caller-address</mnemonic>
+            <title>Caller Address</title>
+            <type>string</type>
+            <expression>?caller-address</expression>
+        </column>
+        
+        <column>
+            <mnemonic>image-name</mnemonic>
+            <title>Image Name</title>
+            <type>string</type>
+            <expression>?image-name</expression>
+        </column>
+        
+        <column>
+            <mnemonic>image-size</mnemonic>
+            <title>Size</title>
+            <type>size-in-bytes</type>
+            <expression>?size</expression>
+        </column>
+        
+        <column>
+            <mnemonic>impact</mnemonic>
+            <title>Impact</title>
+            <type>event-concept</type>
+            <expression>(if (&gt; ?size 3000000) then "High" else "Low")</expression>
+        </column>
+
+        
+    </os-signpost-interval-schema>
+
+    <instrument>
+        <id>com.dheerajdev.demoproject-net</id>
+        <title>demoProject Networking</title>
+        <category>Behavior</category>
+        <purpose>App networking transactions</purpose>
+        <icon>Network</icon>
+        
+        <create-table>
+            <id>image-downloads</id>
+            <schema-ref>image-download</schema-ref>
+        </create-table>
+        
+        <graph>
+            <title>Background Images</title>
+            <lane>
+                <title>Images</title>
+                <table-ref>image-downloads</table-ref>
+                <plot-template>
+                    <instance-by>image-name</instance-by>
+                    <label-format>img: %s</label-format>
+                    <value-from>image-name</value-from>
+                    <color-from>impact</color-from>
+                    <label-from>image-size</label-from>
+                    <disable-implicit-qualifier>true</disable-implicit-qualifier>
+                </plot-template>
+            </lane>
+        </graph>
+        
+        <list>
+            <title>List: Downloads</title>
+            <table-ref>image-downloads</table-ref>
+            <column>start</column>
+            <column>duration</column>
+            <column>status</column>
+            <column>image-name</column>
+            <column>image-size</column>
+        </list>
+        
+        <aggregation>
+            <title>Summary: Download Completed</title>
+            <table-ref>image-downloads</table-ref>
+            <slice>
+                <column>status</column>
+                <equals>
+                    <string>Completed</string>
+                </equals>
+            </slice>
+            <hierarchy>
+                <level>
+                    <column>image-name</column>
+                </level>
+            </hierarchy>
+            <column>
+                <count/>
+            </column>
+            <column>
+                <sum>image-size</sum>
+            </column>
+        </aggregation>
+        
+        <time-slice>
+            <title>Active requests</title>
+            <table-ref>image-downloads</table-ref>
+            <column>start</column>
+            <column>duration</column>
+            <column>image-name</column>
+        </time-slice>
+        
+    </instrument>
+    
+    <template>
+        <import-from-file>demoProject-Instrument.tracetemplate</import-from-file>
+    </template>
+    
+</package>

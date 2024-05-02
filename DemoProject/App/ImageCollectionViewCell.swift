@@ -6,11 +6,14 @@
 //
 
 import UIKit
+import os.signpost
 import SDWebImage
 
 class ImageCollectionViewCell: UICollectionViewCell {
     
     // MARK: - PROPERTIES
+    
+    var signpostID: OSSignpostID?
     
     let imageView: UIImageView = {
         let imageView = UIImageView()
@@ -41,7 +44,14 @@ class ImageCollectionViewCell: UICollectionViewCell {
     }
     
     override func prepareForReuse() {
+        self.imageView.sd_cancelCurrentImageLoad()
         self.imageView.image = nil
+        
+        if let signpostID {
+            os_signpost(.end, log: SignpostLog.networkingLog, name: "Background Image", signpostID: signpostID, "Status:%{public}@,Size:%llu", "Cancelled", 0)
+        }
+        
+        signpostID = nil
     }
     
     // MARK: FUNCTIONS -
@@ -65,46 +75,37 @@ class ImageCollectionViewCell: UICollectionViewCell {
     
     func loadImage(imageData: ImageResponseModel?) {
         
-        self.imageView.image = nil
+        self.imageView.image = UIImage()
         
         guard let imageData,
               let imageUrls = imageData.urls,
-              let urlString = imageUrls.small,
+              let urlString = imageUrls.full,
               let imageURL = URL(string: urlString)
         else {
             return
         }
         
+        let address = unsafeBitCast(self, to: UInt.self)
+        
         // Log a signpost to mark the start of the image download
-        let signpostID = SignpostLog.startSignPost(name: "ImageDownload", "%@", imageURL.absoluteString)
+        signpostID = OSSignpostID(log: SignpostLog.networkingLog)
         
-        let progressBlock: SDWebImageDownloaderProgressBlock = { (receivedSize, expectedSize, url) in
-            
-            let progress = Float(receivedSize) / Float(expectedSize)
-            
-            // Log a signpost to track the image download progress
-//            SignpostLog.eventSignPost(name: "ImageDownloadProgress", signpostID: signpostID, "%@: %.1f%%", imageURL.absoluteString, progress * 100)
-            
-            DispatchQueue.main.async {
-                self.progressLabel.text = "progress: \(progress * 100)%"
-            }
-            
-        }
+        guard let signpostID else { return }
         
-        SDWebImageDownloader.shared.downloadImage(with: imageURL, options: [], progress: progressBlock) { (image, data, error, finished) in
+        os_signpost(.begin, log: SignpostLog.networkingLog, name: "Background Image", signpostID: signpostID, "Image name:%{public}@,Caller:%lu", urlString, address)
+        
+        self.imageView.sd_setImage(with: imageURL) { image, error, cache, url in
             
-            SignpostLog.endSignPost(name: "ImageDownloaded", signpostID: signpostID, "%@", imageURL.absoluteString)
+            guard let image else { return }
             
-            if let error = error {
-                // Handle the error
-                CustomLogger.log(.error, "\(error.localizedDescription)")
-                return
-            }
+            let imageData = image.jpegData(compressionQuality: 1)!
+            let imgData: NSData = NSData(data: imageData)
+            let size = UInt(imgData.count)
+            print("Image size in bytes: \(size)")
             
-            // Check if the download is finished
-            if finished, let image = image {
-                self.imageView.image = image
-            }
+            os_signpost(.end, log: SignpostLog.networkingLog, name: "Background Image", signpostID: signpostID, "Status:%{public}@,Size:%llu", "Completed", size)
+            
+            self.signpostID = nil
         }
     }
     

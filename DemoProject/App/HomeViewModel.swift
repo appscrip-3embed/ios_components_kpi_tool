@@ -18,7 +18,8 @@ class HomeViewModel {
         let url = "\(AppConstants.BASE_URL)/photos?page=\(page)"
         
         // begining signpost
-        let signpostID = SignpostLog.startSignPost(name: "fetchImages")
+        let signpostID = SignpostLog.getSignPostID(log: SignpostLog.networkingLog)
+        SignpostLog.startSignPost(name: "fetchImages", signpostID: signpostID, log: SignpostLog.log)
         
         do {
             let header = ["Authorization": "Client-ID \(AppConstants.ACCESS_KEY)"]
@@ -33,12 +34,12 @@ class HomeViewModel {
             imageResponseData.append(contentsOf: responseData)
             
             // ending signpost on success
-            SignpostLog.endSignPost(name: "fetchImages", signpostID: signpostID)
+            SignpostLog.endSignPost(name: "fetchImages", log: SignpostLog.log, signpostID: signpostID)
             
         } catch {
             
             // ending signpost on error
-            SignpostLog.endSignPost(name: "fetchImages", signpostID: signpostID)
+            SignpostLog.endSignPost(name: "fetchImages", log: SignpostLog.log, signpostID: signpostID)
             
             throw error
         }
