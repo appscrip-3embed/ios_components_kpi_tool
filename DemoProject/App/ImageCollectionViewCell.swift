@@ -28,6 +28,7 @@ class ImageCollectionViewCell: UICollectionViewCell {
         label.backgroundColor = .black
         label.textColor = .white
         label.font = .systemFont(ofSize: 14, weight: .black)
+        label.numberOfLines = 0
         return label
     }()
     
@@ -44,6 +45,7 @@ class ImageCollectionViewCell: UICollectionViewCell {
     }
     
     override func prepareForReuse() {
+        self.progressLabel.text = ""
         self.imageView.sd_cancelCurrentImageLoad()
         self.imageView.image = nil
         
@@ -79,13 +81,14 @@ class ImageCollectionViewCell: UICollectionViewCell {
         
         guard let imageData,
               let imageUrls = imageData.urls,
-              let urlString = imageUrls.full,
+              let urlString = imageUrls.regular,
               let imageURL = URL(string: urlString)
         else {
             return
         }
         
         let address = unsafeBitCast(self, to: UInt.self)
+        let start = CFAbsoluteTimeGetCurrent()
         
         // Log a signpost to mark the start of the image download
         signpostID = OSSignpostID(log: SignpostLog.networkingLog)
@@ -106,7 +109,21 @@ class ImageCollectionViewCell: UICollectionViewCell {
             os_signpost(.end, log: SignpostLog.networkingLog, name: "Background Image", signpostID: signpostID, "Status:%{public}@,Size:%llu", "Completed", size)
             
             self.signpostID = nil
+            
+            let diffInSeconds = CFAbsoluteTimeGetCurrent() - start
+            let diffInMilliseconds = diffInSeconds * 1000
+            let formattedDiff = String(format: "%.2f", diffInMilliseconds)
+            
+            let megabytes = self.bytesToMegabytes(UInt64(size))
+            let formattedSize = String(format: "%.2f", megabytes)
+            
+            self.progressLabel.text = "Time taken to load: \(formattedDiff)ms\nfor image size: \(formattedSize)MB"
         }
+    }
+    
+    func bytesToMegabytes(_ bytes: UInt64) -> Double {
+        let megabytes = Double(bytes) / 1024 / 1024
+        return megabytes
     }
     
 }
